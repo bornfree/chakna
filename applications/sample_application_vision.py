@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+"""
+Simple application that uses the vision service to read a frame.
+Converts it to gray scale. If a frame is completely white, saves it as a persistent memory.
+"""
 
 import time
 import cv2
