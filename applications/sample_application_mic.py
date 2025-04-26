@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
 """
-Simple application that uses the audio service to record 20 seconds of audio
+Simple application that uses the audio service to record 10 seconds of audio
 and save it to a WAV file.
 """
 
@@ -36,17 +35,17 @@ def main():
         with buffer_lock:
             audio_buffer.append(chunk)
     
-    print(f"Starting audio recording for 20 seconds...")
+    print(f"Starting audio recording for 10 seconds...")
     print(f"Recording at {sample_rate}Hz, {channels} channel(s)")
     
     # Start streaming with our callback
     client.start_streaming(callback=collect_audio)
     
-    # Record for 20 seconds
+    # Record for 10 seconds
     try:
-        for i in range(20):
+        for i in range(10):
             time.sleep(1)
-            print(f"Recording: {i+1}/20 seconds", end="\r")
+            print(f"Recording: {i+1}/10 seconds", end="\r")
     except KeyboardInterrupt:
         print("\nRecording interrupted!")
     finally:

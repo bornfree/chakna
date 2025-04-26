@@ -26,6 +26,14 @@ $ sudo apt install libglib2.0-0 libsm6 libxrender1 libxext6
 $ sudo apt-get install portaudio19-dev
 ```
 
+### Install optional bluetooth libs
+```bash
+$ sudo apt install bluetooth bluez pulseaudio pulseaudio-module-bluetooth
+$ sudo systemctl enable bluetooth
+$ sudo systemctl start bluetooth
+```
+Setup with these [commands](https://chatgpt.com/g/g-p-680af82a7bd8819190c61d2a9aeb0212-chakna/c/680cd12a-4b58-8004-bd95-946672da242e)
+
 ### Install CMake
 ```bash
 $ sudo apt install -y cmake build-essential libboost-all-dev
@@ -88,6 +96,30 @@ client.start_streaming(callback=process_audio)
 # When done
 client.stop_streaming()
 ```
+
+### SpeakerClient aka Mouth 🗣️
+
+You can write applications that want to play audio through the Pi’s speaker.
+
+#### Run the Speaker service
+
+Run the service:
+
+```bash
+uv run -m actuators.audio.speaker_service
+```
+Then write an application to play audio.
+```python
+from actuators.audio.client import SpeakerClient
+
+# Initialize the client
+client = SpeakerClient()
+
+# Open your WAV file and read into audio data
+client.play(audio_data)
+
+```
+
 
 ## Sample applications
 See some sample applications in the [applications](./applications) directory.
