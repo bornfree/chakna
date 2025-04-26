@@ -1,12 +1,18 @@
 
 # Chakna
 
-> Building a silly robot that passes around chakna around the house to guests.
+> Building a silly robot that passes chakna around the house to guests.
 
 > It may be useful. It may be not. But it will be fun.
 
-### Raspberry Pi 4
-Install Raspbian 64 bit lite version
+## Hardware
+- Raspberry PI 4
+- Webcam for camera
+- Mic for audio input
+- Speakers for audio output
+
+## Setup
+Install Raspbian 64 bit lite version on the PI
 
 ### Install uv
 ```bash
