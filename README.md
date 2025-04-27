@@ -44,11 +44,12 @@ $ sudo apt install -y libopenblas-dev liblapack-dev
 $ sudo apt install -y libx11-dev libgtk-3-dev  # For OpenCV support
 ```
 
-### DB
+### DB & environment variables.
 Use Supabase. Create a .env file with
 ```
 SUPABASE_URL=
 SUPABASE_KEY=
+OPENAI_API_KEY=
 ```
 
 Make some tables and functions for face embeddings
@@ -160,9 +161,14 @@ client.play(audio_data)
 ```
 
 ## Middlewares
-Face recognition
+### Face recognition
 ```
 $ uv run -m middlewares.face_detection
+```
+
+### Speech transcription
+```
+$ uv run -m middlewares.speech_transcription
 ```
 
 ## Sample applications
