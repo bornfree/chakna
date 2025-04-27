@@ -1,9 +1,9 @@
 import os
 
 # Audio capture settings
-SAMPLE_RATE = 44100         # 44kHz, good for speech recognition
+SAMPLE_RATE = 48000         # 44kHz, good for speech recognition
 CHUNK_SIZE = 1024           # Number of frames per buffer
-CHANNELS = 2                # Mono audio
+CHANNELS = 1                # Mono audio
 FORMAT = 'int16'            # 16-bit signed integer
 
 # Socket settings

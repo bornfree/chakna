@@ -24,6 +24,7 @@ $ uv add opencv-python requests
 $ sudo apt install -y libgl1-mesa-glx
 $ sudo apt install libglib2.0-0 libsm6 libxrender1 libxext6
 $ sudo apt-get install portaudio19-dev
+$ sudo apt install libatlas-base-dev
 ```
 
 ### Install optional bluetooth libs
@@ -39,6 +40,11 @@ Setup with these [commands](https://chatgpt.com/g/g-p-680af82a7bd8819190c61d2a9a
 $ sudo apt install -y cmake build-essential libboost-all-dev
 $ sudo apt install -y libopenblas-dev liblapack-dev
 $ sudo apt install -y libx11-dev libgtk-3-dev  # For OpenCV support
+```
+
+### DB
+```bash
+$ sudo apt install sqlite3 libsqlite3-dev -y
 ```
 
 ## Sensors
