@@ -4,6 +4,8 @@ import cv2, os, time, threading, json, shutil, uuid, socket
 from datetime import datetime
 from pathlib import Path
 from sensors.vision.config import *
+from pathlib import Path
+
 
 class CameraService:
     def __init__(self):
@@ -75,11 +77,35 @@ class CameraService:
         conn.send(json.dumps(resp).encode('utf-8'))
         conn.close()
 
+
     def _rotate_transient(self):
-        files = sorted(Path(TRANSIENT_DIR).glob("*.jpg"))
-        if len(files) > MAX_TRANSIENT_FILES:
-            for old in files[:-MAX_TRANSIENT_FILES]:
+        # 1. Gather all transient frames
+        files = list(Path(TRANSIENT_DIR).glob("*.jpg"))
+
+        # 2. Sort by modification time (oldest first)
+        files.sort(key=lambda p: p.stat().st_mtime)
+
+        # 3. How many to delete?
+        excess = len(files) - MAX_TRANSIENT_FILES
+        if excess <= 0:
+            return
+
+        # 4. Figure out which file is 'latest.jpg' so we don't delete it
+        try:
+            latest_path = Path(LATEST_SYMLINK).resolve()
+        except Exception:
+            latest_path = None
+
+        # 5. Delete the oldest 'excess' files, skipping the latest frame
+        for old in files[:excess]:
+            if latest_path and old.samefile(latest_path):
+                # skip deleting the symlink target; it'll get pruned next round
+                continue
+            try:
                 old.unlink()
+            except OSError as e:
+                pass
+
 
     def _capture_loop(self):
         while not self._stop.is_set():
