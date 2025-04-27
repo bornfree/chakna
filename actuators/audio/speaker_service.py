@@ -24,6 +24,7 @@ class SpeakerService:
             channels=CHANNELS,
             rate=SAMPLE_RATE,
             output=True,
+            output_device_index=OUTPUT_DEVICE_INDEX,
             frames_per_buffer=CHUNK_SIZE
         )
         self._stop = threading.Event()

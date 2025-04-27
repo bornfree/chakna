@@ -1,0 +1,36 @@
+body {
+  font-family: sans-serif;
+  margin: 2rem;
+  background: #fdfdfd;
+  color: #333;
+}
+h1 {
+  margin-bottom: 1rem;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+th, td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #eee;
+}
+th {
+  background: #fafafa;
+  text-align: left;
+}
+tr:hover {
+  background: #fbfbfb;
+}
+.active {
+  color: green;
+  font-weight: bold;
+}
+.inactive {
+  color: red;
+  font-weight: bold;
+}
+.unknown {
+  color: gray;
+}

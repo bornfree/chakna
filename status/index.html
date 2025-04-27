@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chakna Services Status</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1> Chakna Services </h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Service</th>
+        <th>Status</th>
+        <th>Hardware</th>
+      </tr>
+    </thead>
+    <tbody id="svc-body"></tbody>
+  </table>
+  <script>
+    async function load() {
+      const res = await fetch('/status');
+      const data = await res.json();
+      const tbody = document.getElementById('svc-body');
+      tbody.innerHTML = '';
+      data.forEach(svc => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${svc.name}</td>
+          <td class="${svc.status}">${svc.status}</td>
+          <td>${svc.hardware}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    load();
+    setInterval(load, 5000);
+  </script>
+</body>
+</html>

@@ -135,3 +135,16 @@ and then do
 $ chmod +x sync.sh
 $ ./sync.sh
 ```
+
+## Deployment
+Move the files under systemd_files to `/etc/systemd`
+```bash
+$ sudo cp systemd_files/* /etc/systemd/system/
+```
+and then
+```bash
+$ sudo systemctl daemon-reload
+$ sudo systemctl enable chakna-camera.service chakna-audio-sensor.service chakna-audio-speaker.service
+$ sudo systemctl start  chakna-camera.service chakna-audio-sensor.service chakna-audio-speaker.service
+```
+

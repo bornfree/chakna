@@ -45,6 +45,7 @@ class AudioService:
             channels=CHANNELS,
             rate=SAMPLE_RATE,
             input=True,
+            input_device_index=INPUT_DEVICE_INDEX,
             frames_per_buffer=CHUNK_SIZE,
             stream_callback=self._audio_callback
         )
