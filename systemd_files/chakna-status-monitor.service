@@ -1,0 +1,14 @@
+[Unit]
+Description=Chakna Status Monitor
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/chakna
+ExecStart=/home/pi/.local/bin/uv run status/server.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

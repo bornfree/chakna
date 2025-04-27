@@ -135,7 +135,6 @@ and then do
 $ chmod +x sync.sh
 $ ./sync.sh
 ```
-
 ## Deployment
 Move the files under systemd_files to `/etc/systemd`
 ```bash
@@ -144,7 +143,9 @@ $ sudo cp systemd_files/* /etc/systemd/system/
 and then
 ```bash
 $ sudo systemctl daemon-reload
-$ sudo systemctl enable chakna-camera.service chakna-audio-sensor.service chakna-audio-speaker.service
-$ sudo systemctl start  chakna-camera.service chakna-audio-sensor.service chakna-audio-speaker.service
+$ sudo systemctl enable chakna-camera.service chakna-audio-sensor.service chakna-audio-speaker.service chakna-status-monitor.service
+$ sudo systemctl start  chakna-camera.service chakna-audio-sensor.service chakna-audio-speaker.service chakna-status-monitor.service
 ```
+
+Status monitor is available on port 9000 that shows the status of services.
 
