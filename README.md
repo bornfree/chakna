@@ -101,13 +101,10 @@ from sensors.vision.client import VisionClient
 # Initialize client
 client = VisionClient()
 
-# 1. Read the latest frame
+# Read the latest frame
 frame_id, image = client.read()
 
-# 2. Process the image and do something fun
-
-# 3. If you want to “remember” this frame, mark it persistent
-client.mark_persistent(frame_id, meta={'memory': 'Saw something amazing!'})
+# Process the image and do something fun
 ```
 
 ### AudioClient aka Ears 👂👂
