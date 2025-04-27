@@ -5,7 +5,7 @@
 
 > It may be useful. It may be not. But it will be fun.
 
-!![Conceptual diagram](diagram.jpg)
+![Conceptual diagram](diagram.jpg)
 
 ## Hardware
 - Raspberry PI 4
