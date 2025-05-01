@@ -9,6 +9,7 @@ import uuid
 import queue
 from datetime import datetime
 from dotenv import load_dotenv
+import numpy as np
 
 load_dotenv()
 
@@ -20,6 +21,7 @@ CHUNK_DURATION_SEC = 5.0       # audio segment length (seconds)
 OVERLAP_SEC = 1.0              # overlap between segments (seconds)
 SOCKET_PATH = '/tmp/speech_transcription.sock'
 MODEL_NAME = 'gpt-4o-transcribe'  # audio-capable ChatGPT model
+SILENCE_THRESHOLD = 500  # tweak this: lower → more sensitive to quiet speech
 
 # Ensure OpenAI API key is set in environment
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -88,6 +90,15 @@ class SpeechTranscriptionMiddleware:
         """Write WAV and call OpenAI transcription"""
         while True:
             segment = self.segment_queue.get()
+            
+            arr = np.frombuffer(segment, dtype=np.int16)
+            peak = np.max(np.abs(arr))
+            if peak < SILENCE_THRESHOLD:
+                # skip this chunk entirely
+                print("Silent...")
+                continue
+
+            print("Audio activity detected...")
             tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
             try:
                 # write PCM to WAV
