@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=pi
 WorkingDirectory=/home/pi/chakna
-ExecStart=/home/pi/.local/bin/uv run -m sensors.vision.camera_service
+ExecStart=/usr/bin/python3 sensors/vision/camera_service_csi.py
 Restart=on-failure
 RestartSec=5
 

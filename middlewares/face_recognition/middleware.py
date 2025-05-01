@@ -20,7 +20,6 @@ def main():
             fid, img = vision.read(timeout=1.0)
             rgb = img[:, :, ::-1]
             encs = face_recognition.face_encodings(rgb)
-            print("----", len(encs))
             if not encs:
                 continue
             matches = find_similar_faces(np.array(encs[0]))
