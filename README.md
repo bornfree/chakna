@@ -53,7 +53,7 @@ Finally run
 $ uv sync
 ```
 
-## Sensors
+## Sensors & Actuators
 
 
 ### VisionClient aka Eyes 👀
@@ -133,7 +133,7 @@ client.play(audio_data)
 ## Middlewares
 ### Face recognition
 ```
-$ uv run -m middlewares.face_detection
+$ uv run -m middlewares.face_recognition.middleware
 ```
 
 ### Speech transcription
