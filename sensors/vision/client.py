@@ -1,45 +1,84 @@
-import socket, json, cv2, numpy as np, base64
-from sensors.vision.config import SOCKET_PATH
+#!/usr/bin/env python3
+"""
+sensors/vision/client.py
+
+VisionClient for redis_picamera_service.py:
+- Subscribes to a Redis channel of base64-JPEG frames
+- Decodes and caches the latest frame
+- Provides blocking read() and non-blocking latest() methods
+"""
+
+import threading
+import time
+import json
+import base64
+
+import redis
+import numpy as np
+import cv2
 
 class VisionClient:
-    def __init__(self, socket_path=SOCKET_PATH):
-        self.socket_path = socket_path
-
-    def _rpc_call(self, method, params=None):
-        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-            sock.connect(self.socket_path)
-            req = {
-                'jsonrpc': '2.0',
-                'method':  method,
-                'params':  params or {},
-                'id':      1
-            }
-            sock.send(json.dumps(req).encode('utf-8'))
-
-            # === begin change ===
-            # read until server closes
-            buf = bytearray()
-            while True:
-                chunk = sock.recv(64 * 1024)
-                if not chunk:
-                    break
-                buf.extend(chunk)
-            data = buf.decode('utf-8')
-            resp = json.loads(data)
-            # === end change ===
-
-        if 'error' in resp:
-            raise RuntimeError(resp['error']['message'])
-        return resp['result']
-
-
-    def read(self):
+    def __init__(
+        self,
+        host: str = "localhost",
+        port: int = 6379,
+        channel: str = "sensors:vision:frames"
+    ):
         """
-        Returns (frame_id:str, image:np.ndarray)
+        Connect to Redis and start a background listener.
+        Args:
+            host: Redis server hostname
+            port: Redis server port
+            channel: Redis Pub/Sub channel delivering frames
         """
-        info = self._rpc_call('read')
-        fid, b64 = info['frame_id'], info['jpeg_b64']
-        jpg  = base64.b64decode(b64)
-        arr  = np.frombuffer(jpg, dtype=np.uint8)
-        img  = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-        return fid, img
+        self._redis = redis.Redis(host=host, port=port)
+        self._pubsub = self._redis.pubsub(ignore_subscribe_messages=True)
+        self._pubsub.subscribe(channel)
+
+        self._lock = threading.Lock()
+        self._latest = None  # will hold (frame_id: str, image: np.ndarray)
+
+        # launch listener thread
+        t = threading.Thread(target=self._listener, daemon=True)
+        t.start()
+
+    def _listener(self):
+        for msg in self._pubsub.listen():
+            try:
+                payload = json.loads(msg["data"])
+                fid = payload["frame_id"]
+                b64 = payload["jpeg_b64"]
+                jpg = base64.b64decode(b64)
+                arr = np.frombuffer(jpg, dtype=np.uint8)
+                img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+                with self._lock:
+                    self._latest = (fid, img)
+            except Exception:
+                # silently skip invalid messages
+                continue
+
+    def read(self, timeout: float = None):
+        """
+        Blocking: wait until the first frame arrives (or timeout).
+        Returns:
+            (frame_id: str, image: np.ndarray)
+        Raises:
+            TimeoutError if no frame in `timeout` seconds.
+        """
+        start = time.time()
+        while True:
+            with self._lock:
+                if self._latest is not None:
+                    return self._latest
+            if timeout is not None and (time.time() - start) >= timeout:
+                raise TimeoutError(f"No frame received in {timeout} s")
+            time.sleep(0.01)
+
+    def latest(self):
+        """
+        Non-blocking: returns the most recent frame or None if none yet.
+        Returns:
+            (frame_id: str, image: np.ndarray) or None
+        """
+        with self._lock:
+            return self._latest
