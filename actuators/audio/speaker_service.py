@@ -12,8 +12,8 @@ class SpeakerService:
         # Load or initialize audio configuration
         cfg = self.r.hgetall("audio:config")
         self.rate = int(cfg.get(b"rate", b"48000"))
-        self.channels = int(cfg.get(b"channels", b"2"))
-        self.chunk_size = int(cfg.get(b"chunk_size", b"4096"))
+        self.channels = int(cfg.get(b"channels", b"1"))
+        self.chunk_size = int(cfg.get(b"chunk_size", b"1024"))
 
         self.stream_key = "audio:stream"
         self.cmd_channel = "audio:cmd"
