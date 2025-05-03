@@ -1,69 +1,64 @@
-#!/usr/bin/env python3
-"""
-redis_audio_service.py
+# sensors/audio/service.py
 
-Captures from the microphone via PyAudio and publishes each chunk
-(as raw PCM, base64-encoded JSON) to a Redis channel—no RPC socket needed.
-"""
-
-import os
 import time
-import json
 import base64
-
+import threading
+import sounddevice as sd
 import redis
-import pyaudio
+from datetime import datetime
 
-from sensors.audio.config import SAMPLE_RATE, CHUNK_SIZE, CHANNELS, FORMAT
+from .config import REDIS_URL, STREAM_NAME, SAMPLE_RATE, CHANNELS, CHUNK_SIZE
 
-# ------ CONFIG ------
-REDIS_HOST     = os.getenv("AUDIO_REDIS_HOST", "localhost")
-REDIS_PORT     = int(os.getenv("AUDIO_REDIS_PORT", 6379))
-AUDIO_CHANNEL  = os.getenv("AUDIO_CHANNEL", "sensors:audio:chunks")
-# ------
+class AudioCaptureService:
+    def __init__(self):
+        self.redis = redis.Redis.from_url(REDIS_URL)
+        self.stream = None
 
-def main():
-    # 1) Connect to Redis
-    r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+    def _audio_callback(self, indata, frames, time_info, status):
+        """
+        sounddevice callback: gets called with each chunk
+        """
+        if status:
+            print(f"[AudioCapture] Status: {status}", flush=True)
 
-    # 2) Initialize PyAudio input stream
-    p = pyaudio.PyAudio()
-    pa_format = {
-        'int16': pyaudio.paInt16,
-        'int32': pyaudio.paInt32,
-        'float32': pyaudio.paFloat32
-    }.get(FORMAT, pyaudio.paInt16)
+        # timestamp as ISO
+        ts = datetime.utcnow().isoformat()
+        # raw PCM bytes
+        pcm = indata.tobytes()
+        # base64-encode so Redis can store clean strings
+        pcm_b64 = base64.b64encode(pcm).decode('ascii')
 
-    stream = p.open(
-        format=pa_format,
-        channels=CHANNELS,
-        rate=SAMPLE_RATE,
-        input=True,
-        frames_per_buffer=CHUNK_SIZE
-    )
+        # push into Redis stream
+        self.redis.xadd(
+            STREAM_NAME,
+            {
+                "timestamp": ts,
+                "pcm_b64": pcm_b64
+            },
+            maxlen=10_000,  # trim old entries
+            approximate=True
+        )
 
-    print(f"Publishing audio chunks → {AUDIO_CHANNEL} (chunk size={CHUNK_SIZE} frames)")
-    chunk_id = 0
-    try:
-        while True:
-            # 3) Read one chunk
-            data = stream.read(CHUNK_SIZE, exception_on_overflow=False)
-
-            # 4) Base64 + JSON + publish
-            payload = {
-                "chunk_id":    chunk_id,
-                "timestamp":   time.time(),
-                "audio_b64":   base64.b64encode(data).decode("ascii")
-            }
-            r.publish(AUDIO_CHANNEL, json.dumps(payload))
-            chunk_id += 1
-
-    except KeyboardInterrupt:
-        print("Interrupted, shutting down.")
-    finally:
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
+    def start(self):
+        """
+        Begin capturing audio
+        """
+        print(f"[AudioCapture] Starting @ {SAMPLE_RATE}Hz, {CHANNELS}ch, chunk={CHUNK_SIZE}")
+        self.stream = sd.InputStream(
+            samplerate=SAMPLE_RATE,
+            channels=CHANNELS,
+            blocksize=CHUNK_SIZE,
+            callback=self._audio_callback,
+            dtype='int16'
+        )
+        with self.stream:
+            print("[AudioCapture] Running... press Ctrl+C to stop")
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                print("[AudioCapture] Stopping...")
 
 if __name__ == "__main__":
-    main()
+    svc = AudioCaptureService()
+    svc.start()

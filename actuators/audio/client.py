@@ -1,35 +1,25 @@
-import socket
+import redis
 import json
-from actuators.audio.config import SOCKET_PATH, STREAM_PORT
 
 class SpeakerClient:
-    def __init__(self, socket_path=SOCKET_PATH):
-        self.socket_path = socket_path
-        self.config = self._rpc_call('get_config')
-        self.stream_socket = None
+    def __init__(self, url='redis://localhost'):
+        self.r = redis.from_url(url)
 
-    def _rpc_call(self, method, params=None):
-        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-            sock.connect(self.socket_path)
-            req = {'jsonrpc':'2.0','method':method,'params':params or {},'id':1}
-            sock.send(json.dumps(req).encode('utf-8'))
-            resp = json.loads(sock.recv(8192).decode('utf-8'))
-        if 'error' in resp:
-            raise RuntimeError(resp['error']['message'])
-        return resp['result']
+    def play_file(self, path):
+        """Instruct the service to play an audio file from disk."""
+        msg = json.dumps({'action': 'play_file', 'path': path})
+        self.r.publish('audio:cmd', msg)
 
-    def _ensure_stream(self):
-        if self.stream_socket:
-            return
-        self.stream_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.stream_socket.connect(('localhost', STREAM_PORT))
+    def enqueue_raw(self, pcm_bytes):
+        """Push raw PCM bytes into the playback stream."""
+        self.r.xadd('audio:stream', {'data': pcm_bytes})
 
-    def play(self, chunk: bytes):
-        """Send a raw audio chunk to the speaker service."""
-        self._ensure_stream()
-        self.stream_socket.sendall(chunk)
+    def stop(self):
+        """Stop decoding and clear the stream."""
+        msg = json.dumps({'action': 'stop'})
+        self.r.publish('audio:cmd', msg)
 
-    def close(self):
-        if self.stream_socket:
-            self.stream_socket.close()
-            self.stream_socket = None
+    def status(self):
+        """Get current playback state."""
+        state = self.r.hgetall('audio:state')
+        return {k.decode(): v.decode() for k, v in state.items()}

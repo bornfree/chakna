@@ -1,81 +1,48 @@
-import threading
-import time
-import json
-import base64
-import queue
+# sensors/audio/client.py
 
+import base64
 import redis
-import numpy as np
+from typing import Iterator, Dict
+
+from .config import REDIS_URL, STREAM_NAME
 
 class AudioClient:
-    """
-    Subscribes to Redis channel of base64-encoded audio chunks.
-    Provides blocking read() and non-blocking latest() methods.
-    """
+    def __init__(self, group: str = None, consumer: str = None):
+        self.redis = redis.Redis.from_url(REDIS_URL)
+        self.stream = STREAM_NAME
+        # For simple reads we won't use consumer groups
 
-    def __init__(
-        self,
-        host: str    = "localhost",
-        port: int    = 6379,
-        channel: str = "sensors:audio:chunks"
-    ):
-        self._redis   = redis.Redis(host=host, port=port)
-        self._pubsub  = self._redis.pubsub(ignore_subscribe_messages=True)
-        self._pubsub.subscribe(channel)
-
-        self._lock    = threading.Lock()
-        self._latest  = None  # will hold (chunk_id: int, data: bytes)
-
-        # launch listener thread
-        t = threading.Thread(target=self._listener, daemon=True)
-        t.start()
-
-    def _listener(self):
-        for msg in self._pubsub.listen():
-            try:
-                payload = json.loads(msg["data"])
-                cid     = payload["chunk_id"]
-                b64     = payload["audio_b64"]
-                data    = base64.b64decode(b64)
-                with self._lock:
-                    self._latest = (cid, data)
-            except Exception:
-                continue
-
-    def read(self, timeout: float = None):
+    def stream_chunks(self, block_ms: int = 5000) -> Iterator[Dict]:
         """
-        Blocking: wait until the first chunk arrives (or timeout).
-        Returns:
-            (chunk_id: int, data: bytes)
-        Raises:
-            TimeoutError if no chunk in `timeout` seconds.
+        Yield new audio chunks as they arrive.
         """
-        start = time.time()
+        last_id = "$"
         while True:
-            with self._lock:
-                if self._latest is not None:
-                    return self._latest
-            if timeout is not None and (time.time() - start) >= timeout:
-                raise TimeoutError(f"No audio chunk in {timeout}s")
-            time.sleep(0.01)
+            resp = self.redis.xread({self.stream: last_id}, block=block_ms, count=1)
+            if not resp:
+                continue
+            _, entries = resp[0]
+            for entry_id, fields in entries:
+                last_id = entry_id
+                pcm_b64 = fields[b"pcm_b64"].decode("ascii")
+                audio = base64.b64decode(pcm_b64)
+                yield {
+                    "id": entry_id.decode(),
+                    "timestamp": fields[b"timestamp"].decode(),
+                    "pcm_bytes": audio
+                }
 
-    def latest(self):
+    def get_history(self, start_id: str = "-", end_id: str = "+") -> Iterator[Dict]:
         """
-        Non-blocking: returns the most recent chunk or None if none yet.
-        Returns:
-            (chunk_id: int, data: bytes) or None
+        Replay already-captured audio between two entry IDs.
+        Defaults to entire history.
         """
-        with self._lock:
-            return self._latest
-
-    def read_as_array(self):
-        """
-        Convenience: returns numpy int16 array (if FORMAT=='int16').
-        """
-        item = self.read()
-        if not item:
-            return None
-        cid, data = item
-        # assume int16 PCM
-        arr = np.frombuffer(data, dtype=np.int16)
-        return cid, arr
+        entries = self.redis.xrange(self.stream, min=start_id, max=end_id)
+        for entry_id, fields in entries:
+            pcm_b64 = fields[b"pcm_b64"].decode("ascii")
+            audio = base64.b64decode(pcm_b64)
+            yield {
+                "id": entry_id.decode(),
+                "timestamp": fields[b"timestamp"].decode(),
+                "pcm_bytes": audio
+            }

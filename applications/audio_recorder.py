@@ -1,82 +1,71 @@
-"""
-Simple application that uses the audio service to record 10 seconds of audio
-and save it to a WAV file.
-"""
+# record_mp3.py
 
 import time
 import wave
+import tempfile
+import subprocess
 import os
-import numpy as np
-import threading
+
 from sensors.audio.client import AudioClient
+from sensors.audio.config import SAMPLE_RATE, CHANNELS
+
+# how long to record (seconds) and where to write
+DURATION_SECONDS = 10
+OUTPUT_MP3 = "output.mp3"
+
+def record_raw(duration: float) -> bytes:
+    """
+    Pull raw PCM chunks from the Redis stream for `duration` seconds.
+    """
+    client = AudioClient()
+    end_ts = time.time() + duration
+    buf = bytearray()
+
+    for chunk in client.stream_chunks():
+        buf.extend(chunk["pcm_bytes"])
+        if time.time() >= end_ts:
+            break
+
+    return bytes(buf)
+
+def write_wav(raw_pcm: bytes, path: str):
+    """
+    Write raw PCM bytes to a WAV file.
+    Assumes 16-bit little-endian samples.
+    """
+    sample_width = 2  # bytes (int16)
+    with wave.open(path, "wb") as wf:
+        wf.setnchannels(CHANNELS)
+        wf.setsampwidth(sample_width)
+        wf.setframerate(SAMPLE_RATE)
+        wf.writeframes(raw_pcm)
+
+def convert_wav_to_mp3(wav_path: str, mp3_path: str):
+    """
+    Convert WAV → MP3 using ffmpeg.
+    Make sure ffmpeg is installed on your system.
+    """
+    subprocess.run(
+        ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", mp3_path],
+        check=True
+    )
 
 def main():
-    # Create output directory if it doesn't exist
-    os.makedirs("recordings", exist_ok=True)
-    
-    # Initialize the audio client
-    client = AudioClient()
-    
-    # Get audio configuration
-    config = client.config
-    sample_rate = config['sample_rate']
-    channels = config['channels']
-    
-    # Prepare WAV file
-    timestamp = time.strftime("%Y%m%d-%H%M%S")
-    filename = f"recordings/audio_recording_{timestamp}.wav"
-    
-    # Create a buffer to store all audio data
-    audio_buffer = []
-    buffer_lock = threading.Lock()
-    
-    # Define callback to collect audio chunks
-    def collect_audio(chunk, config):
-        with buffer_lock:
-            audio_buffer.append(chunk)
-    
-    print(f"Starting audio recording for 10 seconds...")
-    print(f"Recording at {sample_rate}Hz, {channels} channel(s)")
-    
-    # Start streaming with our callback
-    client.start_streaming(callback=collect_audio)
-    
-    # Record for 10 seconds
-    try:
-        for i in range(10):
-            time.sleep(1)
-            print(f"Recording: {i+1}/10 seconds", end="\r")
-    except KeyboardInterrupt:
-        print("\nRecording interrupted!")
-    finally:
-        # Stop streaming
-        client.stop_streaming()
-        print("\nStopped recording. Processing audio...")
-        
-        # Combine all chunks and save to WAV file
-        with buffer_lock:
-            if not audio_buffer:
-                print("No audio data captured!")
-                return
-                
-            # Combine all chunks
-            audio_data = np.concatenate(audio_buffer)
-            
-            # Save as WAV file
-            with wave.open(filename, 'wb') as wf:
-                wf.setnchannels(channels)
-                if config['format'] == 'int16':
-                    wf.setsampwidth(2)  # 16-bit
-                elif config['format'] == 'int32':
-                    wf.setsampwidth(4)  # 32-bit
-                else:
-                    wf.setsampwidth(2)  # Default to 16-bit
-                    
-                wf.setframerate(sample_rate)
-                wf.writeframes(audio_data.tobytes())
-            
-            print(f"Audio saved to: {filename}")
-            print(f"Recorded {len(audio_data)/sample_rate:.2f} seconds of audio")
+    print(f"▶ Recording {DURATION_SECONDS}s of audio…")
+    raw = record_raw(DURATION_SECONDS)
+
+    # write to temp WAV
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        wav_path = tmp.name
+    write_wav(raw, wav_path)
+    print(f"✔ WAV written to {wav_path}")
+
+    # convert to mp3
+    convert_wav_to_mp3(wav_path, OUTPUT_MP3)
+    print(f"✔ MP3 written to {OUTPUT_MP3}")
+
+    # cleanup
+    os.remove(wav_path)
 
 if __name__ == "__main__":
     main()
