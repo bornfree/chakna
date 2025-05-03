@@ -15,7 +15,7 @@ import base64
 import cv2
 import redis
 
-# ─────── CONFIG ───────
+# ------ CONFIG -------
 REDIS_HOST     = os.getenv("VISION_REDIS_HOST", "localhost")
 REDIS_PORT     = int(os.getenv("VISION_REDIS_PORT", 6379))
 VISION_CHANNEL = os.getenv("VISION_CHANNEL", "sensors:vision:frames")
@@ -25,8 +25,8 @@ RESOLUTION     = (
     int(os.getenv("FRAME_WIDTH", 640)),
     int(os.getenv("FRAME_HEIGHT", 480)),
 )
-CAMERA_INDEX   = int(os.getenv("CAMERA_INDEX", 1))
-# ──────────────────────
+CAMERA_INDEX   = int(os.getenv("CAMERA_INDEX", 0))
+# ------
 
 def main():
     # 1) Connect to Redis
