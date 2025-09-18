@@ -2,7 +2,11 @@ import redis
 import json
 
 class SpeakerClient:
-    def __init__(self, url='redis://localhost'):
+    def __init__(self, url=None):
+        if url is None:
+            from config_loader import get_config
+            config = get_config()
+            url = config.get('redis.url', 'redis://localhost:6379/0')
         self.r = redis.from_url(url)
 
     def play_file(self, path):

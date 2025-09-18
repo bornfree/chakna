@@ -7,16 +7,22 @@ import sys
 import alsaaudio
 
 class SpeakerService:
-    def __init__(self, redis_url="redis://localhost"):
+    def __init__(self, redis_url=None):
+        from config_loader import get_config
+        config = get_config()
+        
+        if redis_url is None:
+            redis_url = config.get('redis.url', 'redis://localhost:6379/0')
+            
         self.r = redis.from_url(redis_url)
-        # Load or initialize audio configuration
-        cfg = self.r.hgetall("audio:config")
-        self.rate = int(cfg.get(b"rate", b"48000"))
-        self.channels = int(cfg.get(b"channels", b"1"))
-        self.chunk_size = int(cfg.get(b"chunk_size", b"1024"))
+        
+        # Load configuration from centralized config
+        self.rate = config.get('audio.capture.sample_rate', 48000)
+        self.channels = config.get('audio.capture.channels', 1)
+        self.chunk_size = config.get('audio.capture.chunk_size', 1024)
 
-        self.stream_key = "audio:stream"
-        self.cmd_channel = "audio:cmd"
+        self.stream_key = config.get('audio.redis.pcm_stream', 'audio:pcm:stream')
+        self.cmd_channel = config.get('audio.redis.command_channel', 'audio:cmd')
 
         # ALSA setup
         self.playback = alsaaudio.PCM(type=alsaaudio.PCM_PLAYBACK)

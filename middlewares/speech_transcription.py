@@ -18,15 +18,19 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ——— Configuration ———
-TRANSCRIPT_STREAM      = os.getenv("TRANSCRIPT_STREAM", "audio:transcriptions")
-LATEST_KEY             = os.getenv("LATEST_TRANSCRIPT_KEY", "audio:latest_transcript")
-MODEL_NAME             = os.getenv("TRANSCRIPTION_MODEL", "gpt-4o-transcribe")
-CHUNK_DURATION_SEC     = float(os.getenv("CHUNK_DURATION_SEC", "5.0"))
-OVERLAP_SEC            = float(os.getenv("OVERLAP_SEC", "1.0"))
-SILENCE_THRESHOLD      = int(os.getenv("SILENCE_THRESHOLD", "500"))
+from config_loader import get_config
+
+config = get_config()
+
+TRANSCRIPT_STREAM = config.get('audio.redis.transcript_stream', 'audio:transcriptions')
+LATEST_KEY = config.get('audio.redis.latest_transcript_key', 'audio:latest_transcript')
+MODEL_NAME = config.get('speech_transcription.model_name', 'gpt-4o-transcribe')
+CHUNK_DURATION_SEC = config.get('speech_transcription.processing.chunk_duration_sec', 5.0)
+OVERLAP_SEC = config.get('speech_transcription.processing.overlap_sec', 1.0)
+SILENCE_THRESHOLD = config.get('speech_transcription.processing.silence_threshold', 500)
 
 # Ensure OpenAI key is set
-oai_key = os.getenv("OPENAI_API_KEY")
+oai_key = os.getenv('OPENAI_API_KEY')
 if not oai_key:
     raise RuntimeError("Please set OPENAI_API_KEY in your environment")
 openai.api_key = oai_key

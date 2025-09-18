@@ -10,8 +10,12 @@ from sensors.audio.client import AudioClient
 from sensors.audio.config import SAMPLE_RATE, CHANNELS
 
 # how long to record (seconds) and where to write
-DURATION_SECONDS = 10
-OUTPUT_MP3 = "output.mp3"
+from config_loader import get_config
+
+config = get_config()
+
+DURATION_SECONDS = config.get('applications.audio_recorder.duration_seconds', 10)
+OUTPUT_MP3 = config.get('applications.audio_recorder.output_file', "output.mp3")
 
 def record_raw(duration: float) -> bytes:
     """

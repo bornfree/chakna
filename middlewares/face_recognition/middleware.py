@@ -5,10 +5,13 @@ import redis
 
 from sensors.vision.client import VisionClient
 from .search import find_similar_faces
+from config_loader import get_config
 
-REDIS_HOST    = os.getenv("VISION_REDIS_HOST", "localhost")
-REDIS_PORT    = int(os.getenv("VISION_REDIS_PORT", 6379))
-VISION_CHAN   = os.getenv("VISION_CHANNEL", "sensors:vision:frames")
+config = get_config()
+
+REDIS_HOST = config.get('redis.host', 'localhost')
+REDIS_PORT = config.get('redis.port', 6379)
+VISION_CHAN = config.get('vision.redis.frames_channel', 'sensors:vision:frames')
 
 def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")

@@ -1,11 +1,14 @@
 import redis
 from redis.commands.search.field import VectorField
 from redis.commands.search.index_definition import IndexDefinition, IndexType
+from config_loader import get_config
 
-REDIS_HOST = "localhost"
-REDIS_PORT = 6379
-INDEX_NAME = "faces"
-KEY_PREFIX = "face:"
+config = get_config()
+
+REDIS_HOST = config.get('redis.host', 'localhost')
+REDIS_PORT = config.get('redis.port', 6379)
+INDEX_NAME = config.get('face_recognition.redis.index_name', 'faces')
+KEY_PREFIX = config.get('face_recognition.redis.key_prefix', 'face:')
 
 def create_face_index(dimensions: int = 128):
     r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)

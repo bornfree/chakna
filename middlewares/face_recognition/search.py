@@ -1,12 +1,15 @@
 import redis
 from redis.commands.search.query import Query
 import numpy as np
+from config_loader import get_config
 
-REDIS_HOST = "localhost"
-REDIS_PORT = 6379
-INDEX_NAME = "faces"
-TOP_K = 5
-MATCH_THRESHOLD = 0.6
+config = get_config()
+
+REDIS_HOST = config.get('redis.host', 'localhost')
+REDIS_PORT = config.get('redis.port', 6379)
+INDEX_NAME = config.get('face_recognition.redis.index_name', 'faces')
+TOP_K = config.get('face_recognition.search.top_k', 5)
+MATCH_THRESHOLD = config.get('face_recognition.search.match_threshold', 0.6)
 
 def find_similar_faces(embedding: np.ndarray):
     vec = embedding.astype(np.float32).tobytes()

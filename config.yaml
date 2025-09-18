@@ -1,0 +1,94 @@
+# Chakna Configuration
+# Central configuration file for all Chakna components
+
+# Redis Configuration
+redis:
+  host: localhost
+  port: 6379
+  url: redis://localhost:6379/0
+
+# Audio Configuration
+audio:
+  # Audio capture settings
+  capture:
+    sample_rate: 48000
+    channels: 1
+    chunk_size: 1024
+  
+  # Redis streams and channels
+  redis:
+    pcm_stream: "audio:pcm:stream"
+    transcript_stream: "audio:transcriptions"
+    command_channel: "audio:cmd"
+    config_key: "audio:config"
+    state_key: "audio:state"
+    latest_transcript_key: "audio:latest_transcript"
+
+# Vision Configuration
+vision:
+  # Camera settings
+  camera:
+    interval_sec: 1.0
+    resolution:
+      width: 640
+      height: 480
+    index: 0  # For USB cameras
+  
+  # Redis channels
+  redis:
+    frames_channel: "sensors:vision:frames"
+
+# Face Recognition Configuration
+face_recognition:
+  # Redis settings
+  redis:
+    index_name: "faces"
+    key_prefix: "face:"
+  
+  # Search parameters
+  search:
+    top_k: 5
+    match_threshold: 0.6
+    dimensions: 128
+
+# Speech Transcription Configuration
+speech_transcription:
+  # Model and API settings
+  model_name: "gpt-4o-transcribe"
+  
+  # Processing parameters
+  processing:
+    chunk_duration_sec: 5.0
+    overlap_sec: 1.0
+    silence_threshold: 500
+  
+  # External API keys (should be set via environment variables)
+  api_keys:
+    openai_api_key: null  # Set via OPENAI_API_KEY env var
+
+# Status Server Configuration
+status_server:
+  host: "0.0.0.0"
+  port: 9000
+  
+  # Service monitoring
+  services:
+    - name: "Camera"
+      unit: "chakna-camera.service"
+      hardware: "/dev/video0"
+    - name: "Audio Capture"
+      unit: "chakna-audio-sensor.service"
+      hardware: "ALSA default input"
+    - name: "Speaker"
+      unit: "chakna-audio-speaker.service"
+      hardware: "ALSA default output"
+
+# Application-specific settings
+applications:
+  audio_recorder:
+    duration_seconds: 10
+    output_file: "output.mp3"
+  
+  media_player:
+    # Settings loaded from Redis audio:config
+    use_redis_config: true

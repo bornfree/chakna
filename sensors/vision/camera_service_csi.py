@@ -22,12 +22,15 @@ from picamera2 import Picamera2
 from PIL import Image
 
 # ------ Config ------
-REDIS_HOST     = 'localhost'
-REDIS_PORT     = 6379
-VISION_CHANNEL = 'sensors:vision:frames'
+from config_loader import get_config
 
-INTERVAL_SEC   = 1.0               # seconds between captures
-RESOLUTION     = (640, 480)        # (width, height)
+config = get_config()
+
+REDIS_HOST = config.get('redis.host', 'localhost')
+REDIS_PORT = config.get('redis.port', 6379)
+VISION_CHANNEL = config.get('vision.redis.frames_channel', 'sensors:vision:frames')
+INTERVAL_SEC = config.get('vision.camera.interval_sec', 1.0)
+RESOLUTION = (config.get('vision.camera.resolution.width', 640), config.get('vision.camera.resolution.height', 480))
 
 # ------------
 

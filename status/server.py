@@ -2,23 +2,11 @@ import json, os, subprocess
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # Define your services and (optional) hardware mapping:
-SERVICES = [
-    {
-      'name': 'Camera',
-      'unit': 'chakna-camera.service',
-      'hardware': '/dev/video0'
-    },
-    {
-      'name': 'Audio Capture',
-      'unit': 'chakna-audio-sensor.service',
-      'hardware': 'ALSA default input'
-    },
-    {
-      'name': 'Speaker',
-      'unit': 'chakna-audio-speaker.service',
-      'hardware': 'ALSA default output'
-    },
-]
+from config_loader import get_config
+
+config = get_config()
+
+SERVICES = config.get('status_server.services', [])
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -64,6 +52,6 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
 
 if __name__ == '__main__':
-    addr = ('0.0.0.0', 9000)
+    addr = (config.get('status_server.host', '0.0.0.0'), config.get('status_server.port', 9000))
     print(f"Serving status page on http://{addr[0]}:{addr[1]}")
     HTTPServer(addr, Handler).serve_forever()

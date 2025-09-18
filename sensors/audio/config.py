@@ -1,12 +1,13 @@
 # sensors/audio/config.py
+# DEPRECATED: Use config_loader.py instead
 
-import os
+from config_loader import get_config
 
-# Redis
-REDIS_URL    = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-STREAM_NAME  = os.getenv("AUDIO_STREAM", "audio:pcm:stream")
+config = get_config()
 
-# Audio capture
-SAMPLE_RATE  = int(os.getenv("AUDIO_SAMPLE_RATE", "48000"))   # Hz
-CHANNELS     = int(os.getenv("AUDIO_CHANNELS", "1"))
-CHUNK_SIZE   = int(os.getenv("AUDIO_CHUNK_SIZE", "1024"))    # frames per buffer
+# Backward compatibility - keeping old variable names
+REDIS_URL = config.get('redis.url', 'redis://localhost:6379/0')
+STREAM_NAME = config.get('audio.redis.pcm_stream', 'audio:pcm:stream')
+SAMPLE_RATE = config.get('audio.capture.sample_rate', 48000)
+CHANNELS = config.get('audio.capture.channels', 1)
+CHUNK_SIZE = config.get('audio.capture.chunk_size', 1024)

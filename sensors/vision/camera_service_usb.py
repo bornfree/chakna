@@ -16,16 +16,16 @@ import cv2
 import redis
 
 # ------ CONFIG -------
-REDIS_HOST     = os.getenv("VISION_REDIS_HOST", "localhost")
-REDIS_PORT     = int(os.getenv("VISION_REDIS_PORT", 6379))
-VISION_CHANNEL = os.getenv("VISION_CHANNEL", "sensors:vision:frames")
+from config_loader import get_config
 
-INTERVAL_SEC   = float(os.getenv("INTERVAL_SEC", 1.0))
-RESOLUTION     = (
-    int(os.getenv("FRAME_WIDTH", 640)),
-    int(os.getenv("FRAME_HEIGHT", 480)),
-)
-CAMERA_INDEX   = int(os.getenv("CAMERA_INDEX", 0))
+config = get_config()
+
+REDIS_HOST = config.get('redis.host', 'localhost')
+REDIS_PORT = config.get('redis.port', 6379)
+VISION_CHANNEL = config.get('vision.redis.frames_channel', 'sensors:vision:frames')
+INTERVAL_SEC = config.get('vision.camera.interval_sec', 1.0)
+RESOLUTION = (config.get('vision.camera.resolution.width', 640), config.get('vision.camera.resolution.height', 480))
+CAMERA_INDEX = config.get('vision.camera.index', 0)
 # ------
 
 def main():
